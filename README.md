@@ -1,6 +1,6 @@
 # Design and Optimisation of a Closed-Loop DC-DC Boost Converter
 
-This project presents a systematic, automated approach for a tuning PI controller for a power converter (DC-DC Boost converer that steps up 12V to 20V). The PI gains are optimised using a Genetic Algorithm (GA) that minimises a cost function. The result is a well-regulated 20V output with improved dynamics.
+This project presents a systematic, automated approach for tuning a **PI controller** for a power converter (specifically a DC-DC Boost converter that steps up **12V to 20V**). The PI gains are optimized using a **Genetic Algorithm (GA)** that minimizes a cost function. The result is a well-regulated 20V output with improved dynamic performance.
 
 ## 📌 Project Overview
 

@@ -48,6 +48,12 @@ By implementing the GA-tuned PI controller, the system successfully adapts the d
 3. Upon starting the simulation ($t=0$), Simulink will pause and initialize parallel workers to run the Genetic Algorithm. 
 4. The GA searches for optimal $K_p$ and $K_i$ values. Once the optimum gains are found, the Simulink simulation resumes automatically and applies the tuned gains to the PI controller. 
 
+## 🔮 Future Work: Hardware Implementation
+
+Currently, work is underway to transition this simulated closed-loop boost converter into a physical hardware prototype, functioning as a portable laptop charger. Future updates to this repository will include:
+* **PCB Schematics:** Complete board designs and routing (developed in KiCad).
+* **Microcontroller Integration:** Utilizing an STM32 microcontroller to drive the MOSFET switching. The STM32 will be programmed to generate the 25 kHz PWM frequency, directly applying the optimal duty cycle values outputted by the MATLAB Genetic Algorithm. 
+
 ## 👨‍💻 Author
 
 **Varun Sathya** BTech Electrical and Electronics Engineering (EEE)  

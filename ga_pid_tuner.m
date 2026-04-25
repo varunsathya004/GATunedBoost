@@ -43,7 +43,7 @@ fprintf('\nGA Results: Kp = %.6f, Ki = %.6f\n', Kp_final, Ki_final);
 sys_cl = feedback((pid(Kp_final, Ki_final) * (1/20)) * Plant, 1);
 
 figure('Name', 'GA PID Tuning Result', 'NumberTitle', 'off');
-step(Vout_ref * sys_cl, 0.05); grid on;
+step(Vout_ref * sys_cl, 0.3); grid on;
 yline(Vout_ref, 'r--', '20V Reference');
 title(['GA Optimized Response | Kp: ', num2str(Kp_final), ', Ki: ', num2str(Ki_final)]);
 ylabel('Output Voltage (V)');

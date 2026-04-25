@@ -1,99 +1,84 @@
-function [Kp_out, Ki_out] = ga_pid_tuner()
-    % =====================================================================
-    % Parallel Pooled Non-Linear Genetic Algorithm PID Tuner
-    % Called extrinsically by Simulink at t=0
-    % =====================================================================
-    rng(42);
-    disp('Simulink paused at t=0. Booting 10 parallel GA workers...');
+function [Kp, Ki] = ga_pid_tuner()
 
-    num_runs = 10; 
-    best_Kp = zeros(num_runs, 1);
-    best_Ki = zeros(num_runs, 1);
-    best_costs = zeros(num_runs, 1);
+clear; clc;
+rng(42);
 
-    % Plant Parameters & Bounds
-    Vin = 12; Vref = 20; L = 76.8e-6; C = 400e-6; R = 4;
-    lb = [0.0001, 1.0]; 
-    ub = [1, 100.0];
+%% 1. Parameters
+Vin = 12;
+Vout_ref = 20;
+L = 76.8e-6;
+C = 400e-6;
+R = 4;
+beta = 1;
+D_prime = Vin / Vout_ref;
 
-    % Options (UseParallel MUST be false here for parfor to work)
-    options = optimoptions('ga', ...
-        'Display', 'off', ...
-        'PopulationSize', 30, ...
-        'MaxGenerations', 50, ...
-        'UseParallel', false); 
-        
-    % Execute 10 independent runs in parallel
-    parfor i = 1:num_runs
-        [opt_K, fval] = ga(@(K) eval_boost_ode(K, Vin, Vref, L, C, R), ...
-                        2, [], [], [], [], lb, ub, [], options);
-        best_Kp(i) = opt_K(1);
-        best_Ki(i) = opt_K(2);
-        best_costs(i) = fval;
-        fprintf('Worker %d finished | Cost: %.4f | Kp: %.4f | Ki: %.4f\n', i, fval, opt_K(1), opt_K(2));
+%% 2. Plant Transfer Function
+num = (Vin / (D_prime^2)) * [-L, R*(D_prime^2)];
+den = [(L * C * R), L, R*(D_prime^2)];
+G_vd = tf(num, den);
+Plant = G_vd * beta;
+
+%% 3. GA Setup
+num_vars = 2;
+lb = [0.001, 10];
+ub = [1, 1000];
+
+options = optimoptions('ga', ...
+    'PopulationSize', 30, ...
+    'MaxGenerations', 100, ...
+    'MaxStallGenerations', 20, ...
+    'FunctionTolerance', 1e-4, ...
+    'Display', 'iter', ...
+    'UseParallel', false);
+
+cost_func = @(K) evaluate_boost_pi(K, Plant, Vout_ref);
+[optimal_K, ~] = ga(cost_func, num_vars, [], [], [], [], lb, ub, [], options);
+
+Kp_final = optimal_K(1);
+Ki_final = optimal_K(2);
+fprintf('\nGA Results: Kp = %.6f, Ki = %.6f\n', Kp_final, Ki_final);
+
+%% 4. Verification Plot
+% Apply the 1/20 gain to the verification plot as well
+sys_cl = feedback((pid(Kp_final, Ki_final) * (1/20)) * Plant, 1);
+
+figure('Name', 'GA PID Tuning Result', 'NumberTitle', 'off');
+step(Vout_ref * sys_cl, 0.05); grid on;
+yline(Vout_ref, 'r--', '20V Reference');
+title(['GA Optimized Response | Kp: ', num2str(Kp_final), ', Ki: ', num2str(Ki_final)]);
+ylabel('Output Voltage (V)');
+
+%% Cost Function
+function cost = evaluate_boost_pi(K, Plant, Vref)
+    Kp = K(1); 
+    Ki = K(2);
+    
+    % EMBEDDED GAIN: Multiply by 1/20 to match the Simulink model's error path
+    C_ctrl = pid(Kp, Ki) * (1/20);
+    sys_cl = feedback(C_ctrl * Plant, 1);
+
+    % Stability check
+    if ~isstable(sys_cl)
+        cost = 1e8;
+        return;
     end
 
-    % Extract the absolute best from the 8 runs
-    [absolute_best_cost, best_idx] = min(best_costs);
-    Kp_out = best_Kp(best_idx);
-    Ki_out = best_Ki(best_idx);
+    % Step response scaled to Vref
+    t = 0:1e-4:0.01;
+    y = Vref * step(sys_cl, t);
 
-    fprintf('--- GA Complete. Resuming Simulink ---\n');
-    fprintf('Global Champion (Worker %d): Kp = %f | Ki = %f (Cost: %f)\n', ...
-            best_idx, Kp_out, Ki_out, absolute_best_cost);
+    % Voltage based penalties
+    steady_state_error = abs(Vref - y(end));
+    overshoot = max(0, max(y) - Vref);
+
+    % ITAE
+    error = abs(Vref - y);
+    itae = sum(t .* error') * (t(2) - t(1));
+
+    cost = 100 * steady_state_error + 10 * overshoot + itae;
 end
 
-% =========================================================================
-% Cost Function
-% =========================================================================
-function cost = eval_boost_ode(K, Vin, Vref, L, C, R)
-    Kp = K(1); Ki = K(2);
-    x0 = [0; 0; 0];
-    tspan = [0, 0.05]; 
-    
-    try
-        warning('off', 'all');
-        [t, x] = ode45(@(t, x) boost_dynamics(t, x, Kp, Ki, Vin, Vref, L, C, R), tspan, x0);
-        warning('on', 'all');
-        
-        Vout = x(:, 2);
-        error = abs(Vref - Vout); 
-        
-        if any(isnan(Vout)) || max(Vout) > 40 || Vout(end) < 0
-            cost = 1e6;
-            return;
-        end
-        
-        % Integral Square Error
-        dt = [0; diff(t)];
-        cost = sum((error.^2) .* dt);
-    catch
-        cost = 1e6; 
-    end
-end
+Kp = Kp_final;
+Ki = Ki_final;
 
-% =========================================================================
-% Plant Dynamics: Soft-Start + Anti-Windup(clamped) + Damping
-% =========================================================================
-function dxdt = boost_dynamics(t, x, Kp, Ki, Vin, Vref, L, C, R)
-    iL = x(1); Vout = x(2); err_int = x(3);
-    
-    Vref_dynamic = Vref * (1 - exp(-t / 0.005)); 
-    error = Vref_dynamic - Vout;
-    d = Kp * error + Ki * err_int;
-    derr_int_dt = error;
-    
-    if d >= 0.85
-        d = 0.85;
-        if error > 0, derr_int_dt = 0; end
-    elseif d <= 0.0
-        d = 0.0;
-        if error < 0, derr_int_dt = 0; end
-    end
-    
-    RL = 0.05; 
-    dVout_dt = ((1 - d) * iL) / C - Vout / (R * C);
-    diL_dt = (Vin - iL * RL - (1 - d) * Vout) / L;
-    
-    dxdt = [diL_dt; dVout_dt; derr_int_dt];
 end

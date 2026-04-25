@@ -4,7 +4,7 @@ This project presents a systematic, automated approach for tuning a power conver
 
 ## 📌 Project Overview
 
-The workflow begins with an open-loop simulation to demonstrate the gap between theoretical and actual output voltages caused by inherent circuit non-idealities, such as switching losses and parasitic resistances. To eliminate this steady-state error, a closed-loop PI controller is introduced to dynamically adjust the duty cycle. The core of the project relies on a parallel-pooled Genetic Algorithm to automatically tune the $K_p$ and $K_i$ gains. Rather than relying on classical linearisation—which frequently breaks down for nonlinear switching elements—this approach evaluates the GA cost function against a direct Ordinary Differential Equation (ODE) model. Ultimately, the algorithm optimises system performance by minimising the Integral Square Error (ISE) while enforcing strict penalties against instability and excessive overvoltages.
+The workflow begins with an open-loop simulation to demonstrate the gap between theoretical and actual output voltages caused by inherent circuit non-idealities, such as switching losses and parasitic resistances. To eliminate this steady-state error, a closed-loop PI controller is introduced to dynamically adjust the duty cycle. The core of the project relies on a parallel-pooled Genetic Algorithm to automatically tune the $K_p$ and $K_i$ gains. Ultimately, the algorithm optimises system performance by minimising the Integral Time Absolute Error (ITAE) while enforcing strict penalties against instability and excessive overvoltages.
 
 ## ⚙️ System Specifications
 

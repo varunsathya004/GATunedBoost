@@ -32,7 +32,7 @@ By implementing the GA-tuned PI controller, the system successfully adapts the d
 | **Steady State Error** | 1.25 V (6.25%) | $\approx$ 0 V |
 | **Duty Cycle** | 0.4 (fixed) | 0.4397 (automatic) |
 | **Voltage Regulation** | None | Active |
-| **Tuning Method** | N/A | Genetic Algorithm + ISE |
+| **Tuning Method** | N/A | Genetic Algorithm + ITAE |
 
 ## 🛠️ Software Requirements
 

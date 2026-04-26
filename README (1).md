@@ -1,6 +1,6 @@
-# Design and Optimisation of a Closed-Loop DC-DC Boost Converter
+# Genetic Algorithm-Based PI Tuning of a closed-loop DC-DC Boost Converter 
 
-This project presents a systematic, automated approach for tuning a power converter controller without manual trial and error. A closed loop PI controller is introduced to regulate the output to the 20V target. The PI gains are optimised using a Genetic Algorithm (GA) that minimises a cost function. The result is a well-regulated 20V output with improved dynamics.
+This project presents a systematic, automated approach for tuning a **PI controller** for a power converter (specifically a DC-DC Boost converter that steps up **12V to 20V**). The PI gains are optimized using a **Genetic Algorithm (GA)** that minimizes a cost function. The result is a well-regulated 20V output with improved dynamic performance.
 
 ## 📌 Project Overview
 
@@ -47,6 +47,12 @@ By implementing the GA-tuned PI controller, the system successfully adapts the d
 2. The GA tuner is integrated directly into the simulation via a MATLAB Function block.
 3. Upon starting the simulation ($t=0$), Simulink will pause and initialize parallel workers to run the Genetic Algorithm. 
 4. The GA searches for optimal $K_p$ and $K_i$ values. Once the optimum gains are found, the Simulink simulation resumes automatically and applies the tuned gains to the PI controller. 
+
+## 🔮 Future Work: Hardware Implementation
+
+Currently, work is underway to transition this simulated closed-loop boost converter into a physical hardware prototype, functioning as a portable laptop charger. Future updates to this repository will include:
+* **PCB Schematics:** Complete board designs and routing (developed in KiCad).
+* **Microcontroller Integration:** Utilizing an STM32 microcontroller to drive the MOSFET switching. The STM32 will be programmed to generate the 25 kHz PWM frequency, directly applying the optimal duty cycle values outputted by the MATLAB Genetic Algorithm. 
 
 ## 👨‍💻 Author
 

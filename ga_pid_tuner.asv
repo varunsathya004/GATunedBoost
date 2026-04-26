@@ -1,0 +1,68 @@
+function [Kp, Ki] = ga_pid_tuner()
+    clc;
+
+   % 1. Check for existing pool; only start if empty
+p = gcp('nocreate');
+if isempty(p)
+    p = parpool(4); % Start with 4 workers
+end
+
+%% 2. Rest of your GA code...
+
+
+    %% 2. Parameters (Fixed for all runs)
+    Vin = 12; Vout_ref = 20; L = 76.8e-6; C = 400e-6; R = 4; beta = 1;
+    D_prime = Vin / Vout_ref;
+    num = (Vin / (D_prime^2)) * [-L, R*(D_prime^2)];
+    den = [(L * C * R), L, R*(D_prime^2)];
+    Plant = tf(num, den) * beta;
+
+    %% 3. Parallel Multi-Run Setup
+    num_runs = 4; 
+    all_K = zeros(num_runs, 2);
+    all_fval = zeros(num_runs, 1);
+
+    % Configure GA (Internal Parallel must be FALSE here)
+    options = optimoptions('ga', ...
+        'PopulationSize', 30, ...
+        'MaxGenerations', 100, ...
+        'UseParallel', false, ... % CRITICAL: Set to false so parfor handles the runs
+        'Display', 'none');       % 'none' prevents cluttered text from 4 runs
+
+    % PARFOR loop: Runs sessions concurrently
+    parfor i = 1:num_runs
+        fprintf('Starting GA Session %d...\n', i);
+        cost_func = @(K) evaluate_boost_pi(K, Plant, Vout_ref);
+        [sol, fval] = ga(cost_func, 2, [], [], [], [], [0.001, 10], [1, 1000], [], options);
+        
+        all_K(i, :) = sol;
+        all_fval(i) = fval;
+    end
+
+    %% 4. Pick the Best Result
+    [~, best_idx] = min(all_fval);
+    Kp = all_K(best_idx, 1);
+    Ki = all_K(best_idx, 2);
+
+    fprintf('\nBest Result from Session %d: Kp = %.6f, Ki = %.6f\n', best_idx, Kp, Ki);
+
+    %% 5. Verification Plot
+    sys_cl = feedback((pid(Kp, Ki) * (1/20)) * Plant, 1);
+    step(Vout_ref * sys_cl, 0.3); grid on;
+    title(sprintf('Best Optimized Response (Run %d)', best_idx));
+end
+
+% Local function (must be outside the main function block)
+function cost = evaluate_boost_pi(K, Plant, Vref)
+    C_ctrl = pid(K(1), K(2)) * (1/20);
+    sys_cl = feedback(C_ctrl * Plant, 1);
+    if ~isstable(sys_cl), cost = 1e8; return; end
+    
+    t = 0:1e-4:0.01;
+    y = Vref * step(sys_cl, t);
+    steady_state_error = abs(Vref - y(end));
+    overshoot = max(0, max(y) - Vref);
+    itae = sum(t .* abs(Vref - y)') * 1e-4;
+    cost = 100 * steady_state_error + 10 * overshoot + itae;
+end
+

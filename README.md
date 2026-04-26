@@ -4,7 +4,21 @@ This project presents a systematic, automated approach for tuning a **PI control
 
 ## 📌 Project Overview
 
-The workflow begins with an open-loop simulation to demonstrate the gap between theoretical and actual output voltages caused by inherent circuit non-idealities, such as switching losses and parasitic resistances. To eliminate this steady-state error, a closed-loop PI controller is introduced to dynamically adjust the duty cycle. The core of the project relies on a parallel-pooled Genetic Algorithm to automatically tune the $K_p$ and $K_i$ gains. Ultimately, the algorithm optimises system performance by minimising the Integral Time Absolute Error (ITAE) while enforcing strict penalties against instability and excessive overvoltages.
+The workflow begins with an open-loop simulation to demonstrate the gap between theoretical and actual output voltages caused by inherent circuit non-idealities, such as switching losses and parasitic resistances. 
+
+To eliminate this steady-state error, a closed-loop PI controller is introduced to dynamically adjust the duty cycle. The control architecture feeds back the output voltage and compares it to a 20V reference. The resulting error signal is then passed through a scaling gain of 1/20 before being sent to the PI controller. 
+
+Mathematically, because the input is scaled, the proportional and integral control actions see an error 20 times smaller than the actual voltage difference:
+
+$$\text{Control Action} = K_{p(GA)} \left(\frac{\text{Error}}{20}\right) + K_{i(GA)} \int \left(\frac{\text{Error}}{20}\right) dt$$
+
+By factoring out the constant, it becomes clear that the effective system-level gains acting on the raw error are exactly one-twentieth of the algorithm's output:
+
+$$\text{Actual } K = \frac{K_{GA}}{20}$$
+
+For instance, if the algorithm optimizes a $K_i$ value of 200, the actual $K_i$ governing the physical circuit is 10.
+
+The core of the project relies on a parallel-pooled Genetic Algorithm to automatically tune these gains. Ultimately, the algorithm optimises system performance by minimising the Integral Time Absolute Error (ITAE) while enforcing strict penalties against instability and excessive overvoltages.
 
 ## ⚙️ System Specifications
 

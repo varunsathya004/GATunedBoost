@@ -108,17 +108,8 @@ To ensure absolute consistency:
 
 ## 🚀 Usage
 
-For the best experience, use the automated launcher to bypass initialization delays.
-
-### Option 1: Automated Launcher (Recommended)
-1. Navigate to the project folder in Windows Explorer.
-2. **Double-click `Launch_Sim.bat`**.
-3. This will automatically launch MATLAB, initialize the parallel pool workers in the background, and open the Simulink model for you.
-
-### Option 2: Manual Initialization
-If you prefer to run the steps manually:
 1. Open MATLAB and navigate to the project directory.
-2. Run the `startup.m` function in the Command Window to "pre-warm" the parallel pool.
+2. Run the `startup.m` function to "pre-warm" the parallel pool.
 3. Once the pool is ready, open the `boostconverter_pid.slx` file.
 4. Click **Run** in Simulink.
 

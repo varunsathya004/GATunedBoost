@@ -108,10 +108,24 @@ To ensure absolute consistency:
 
 ## 🚀 Usage
 
-1. Open the Simulink model (`.slx` file).
-2. The GA tuner is integrated directly into the simulation via a MATLAB Function block.
-3. Upon starting the simulation ($t=0$), Simulink will pause and initialize parallel workers to run the Genetic Algorithm. 
-4. The GA searches for optimal $K_p$ and $K_i$ values. Once the optimum gains are found, the Simulink simulation resumes automatically and applies the tuned gains to the PI controller. 
+For the best experience, use the automated launcher to bypass initialization delays.
+
+### Option 1: Automated Launcher (Recommended)
+1. Navigate to the project folder in Windows Explorer.
+2. **Double-click `Launch_Sim.bat`**.
+3. This will automatically launch MATLAB, initialize the parallel pool workers in the background, and open the Simulink model for you.
+
+### Option 2: Manual Initialization
+If you prefer to run the steps manually:
+1. Open MATLAB and navigate to the project directory.
+2. Run the `startup.m` function in the Command Window to "pre-warm" the parallel pool.
+3. Once the pool is ready, open the `boostconverter_pid.slx` file.
+4. Click **Run** in Simulink.
+
+### 🧬 How the Tuning Works
+* Upon starting the simulation ($t=0$), Simulink will pause to call the Genetic Algorithm.
+* The GA searches for optimal $K_p$ and $K_i$ values using a high-speed discrete-time evaluator.
+* Once the optimum gains are found, the simulation resumes automatically and applies the tuned parameters to the physical converter model.
 
 ## 🔮 Future Work: Hardware Implementation
 
